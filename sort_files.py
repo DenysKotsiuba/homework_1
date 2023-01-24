@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 import shutil
 from sys import argv
@@ -23,17 +24,18 @@ for key in FILE_TYPES:
     other_suffixes = set()
 
 
-def delete_empty_directorys(path):
+def delete_empty_directories(path):
 
     directory_path = Path(path)
 
     for elem in directory_path.iterdir():
 
         if elem.is_dir() and not elem.name in FILE_TYPES.keys():
+            delete_empty_directories(elem)
             try:
                 elem.rmdir()
             except OSError:
-                elem.iterdir()
+                continue
 
 
 def normalize(file_name):
@@ -62,40 +64,37 @@ def normalize(file_name):
 def sort_directory(path):
 
     directory_path = Path(path)
-
+    
     for elem in directory_path.iterdir():
 
         new_file_name = normalize(elem.stem)
         elem = elem.rename(f'{elem.parent}\\{new_file_name}{elem.suffix}')
 
         if elem.is_dir() and not elem.name in FILE_TYPES.keys():
-            print(elem)
             sort_directory(elem)
         elif elem.suffix in FILE_TYPES['images']:
             image_files.append(elem.name)
             matching_suffixes.add(elem.suffix)
-            shutil.move(elem, 'images')
+            shutil.move(elem, f'{argv[1]}\\images')
         elif elem.suffix in FILE_TYPES['documents']:
             documents_files.append(elem.name)
             matching_suffixes.add(elem.suffix)
-            shutil.move(elem, 'documents')
+            shutil.move(elem, f'{argv[1]}\\documents')
         elif elem.suffix in FILE_TYPES['audio']:
             audio_files.append(elem.name)
             matching_suffixes.add(elem.suffix)
-            shutil.move(elem, 'audio')
+            shutil.move(elem, f'{argv[1]}\\audio')
         elif elem.suffix in FILE_TYPES['video']:
             video_files.append(elem.name)
             matching_suffixes.add(elem.suffix)
-            shutil.move(elem, 'video')
+            shutil.move(elem, f'{argv[1]}\\video')
         elif elem.suffix in FILE_TYPES['archives']:
             archives_files.append(elem.name)
             matching_suffixes.add(elem.suffix)
-            shutil.unpack_archive(elem, f'archives\\{elem.stem}')
+            shutil.unpack_archive(elem, f'{argv[1]}\\archives\\{elem.stem}')
             elem.unlink()
         else:
             other_suffixes.add(elem.suffix)
-
-    delete_empty_directorys(directory_path)
 
     return ( 
         documents_files, 
@@ -108,4 +107,5 @@ def sort_directory(path):
     )
 
 
-print(sort_directory(argv[1]))
+sort_directory(argv[1])
+delete_empty_directories(argv[1])
